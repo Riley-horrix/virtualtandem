@@ -1,0 +1,29 @@
+virtual = true
+
+[robot]
+    # Wheel base in metres measured from the outside of each wheel 
+    outer_wheel_base = 0.168
+
+    # Wheel base in metres measured from the inside of each wheel 
+    inner_wheel_base = 0.129
+
+    # Wheel radius in metres
+    wheel_radius = 0.065
+
+    # Default terrain configuration
+    default_terrain = "carpet"
+
+    # Heading differential (+ve for clockwise offset)
+    heading_diff = 0.0
+
+    # Weight in kg
+    weight = 1
+
+    [robot.configs]
+        [robot.configs.carpet]
+            wheel_slip_acc = 0
+            wheel_slip_vel = 0
+        [robot.configs.table]
+            wheel_slip_acc = 0
+            wheel_slip_vel = 0
+

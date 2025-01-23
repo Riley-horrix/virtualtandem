@@ -1,0 +1,4 @@
+[LegoMotor]
+    # Maximal value for the encoder number
+    encoder_max = 0xffffffff
+    
