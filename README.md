@@ -1,5 +1,5 @@
 # virtualtandem
-A small library written in python to simulate a 2 wheeled vehicle in a virtual environment, with the aim of assisting in the tuning of control constants.
+A small library written in python to simulate a 2 wheeled vehicle in a virtual environment, with the aim of assisting in the tuning of control constants. Initially, the library will be focussed around the [brickpi](https://www.dexterindustries.com/brickpi3-tutorials-documentation/) physical hardware.
 
 The TOML configuration file in the root folder, `robot_config.toml` is a file to be populated by the user of the library. You must define the following constants : 
 <!-- List of constants -->

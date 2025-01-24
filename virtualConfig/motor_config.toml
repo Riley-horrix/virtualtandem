@@ -1,4 +1,15 @@
 [LegoMotor]
     # Maximal value for the encoder number
     encoder_max = 0xffffffff
+
+    # Encoder increments / degree of rotation
+    encoder_degrees = 1
+
+    # From https://www.philohome.com/motors/motorcomp.htm
+    no_load_rpm = 170
+
+    # Constants relating rpm to torque on the motor
+    # rpm = a + torque * b
+    rpm_torque_a = 170
+    rpm_torque_b = -3.4
     

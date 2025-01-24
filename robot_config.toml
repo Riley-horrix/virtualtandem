@@ -19,6 +19,10 @@ virtual = true
     # Weight in kg
     weight = 1
 
+    # Robot configuration (enumeration) possible values :
+    # tandem (2 wheel differential drive - like a roomba)
+    configuration = "tandem"
+
     [robot.configs]
         [robot.configs.carpet]
             wheel_slip_acc = 0
