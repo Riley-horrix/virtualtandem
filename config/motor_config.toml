@@ -1,0 +1,15 @@
+[LegoMotor]
+# Maximal value for the encoder number
+encoder_max = 0xffffffff
+
+# Encoder increments / degree of rotation
+encoder_degrees = 1
+
+# Constants relating rpm to torque on the motor
+# rpm = a + torque (Nm) * b
+rpm_torque_a = 170.0
+rpm_torque_b = -340.0
+
+# Constant relating rpm to power on the motor
+# rpm = power (%) * a
+rpm_power_a = 1.63

@@ -1,10 +1,21 @@
 import hardware.hardwareInterface as hw
 import hardware.virtual.virtualRobot as vr
+import common as cm
 
 class VirtualInterface(hw.HardwareInterface):
     def __init__(self):
         print("Virtual Interface Initialising")
         self.virtualRobot = vr.VirtualRobot()
+
+    def update(self, dt):
+        """Update the underlying hardware.
+
+        This currently does nothing for robots not running virtually.
+
+        Args:
+            dt (float): Delta time (s).
+        """
+        self.virtualRobot.update(dt)
 
     def set_motor_power(self, port, power):
         """
@@ -14,7 +25,18 @@ class VirtualInterface(hw.HardwareInterface):
         port -- The Motor port(s). PORT_A, PORT_B, PORT_C, and/or PORT_D.
         power -- The power from -100 to 100, or -128 for float
         """
-        raise "Method not defined"
+
+        if not hw.validMotorPort(port):
+            print(f"Virtual Interface: Port not valid, port : {port}")
+            return
+        
+        if power == 128:
+            self.virtualRobot.set_motor_idle(port)
+        elif cm.bounded(power, -100.0, 100.0):
+            self.virtualRobot.set_motor_power(port, power)
+        else:
+            print(f"Virtual Interface: Power exceeds limits, power : {power}")
+            return
 
     def set_motor_position(self, port, position):
         """
@@ -24,7 +46,12 @@ class VirtualInterface(hw.HardwareInterface):
         port -- The motor port(s). PORT_A, PORT_B, PORT_C, and/or PORT_D.
         position -- The target position
         """
-        raise "Method not defined"
+
+        if not hw.validMotorPort(port):
+            print(f"Virtual Interface: Port not valid, port : {port}")
+            return
+        
+        self.virtualRobot.set_motor_position(port, round(position) % 360)
 
     def set_motor_position_relative(self, port, degrees): 
         """

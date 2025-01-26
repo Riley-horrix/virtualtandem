@@ -1,5 +1,15 @@
 virtual = true
 
+# Command list
+[[commands]]
+type = "FORWARDS"
+distance = 0.4
+power = 0.5
+
+# [[commands]]
+# type = "MOVEMENT"
+# distance = 0.4
+
 [robot]
     # Wheel base in metres measured from the outside of each wheel 
     outer_wheel_base = 0.168
@@ -19,6 +29,10 @@ virtual = true
     # Weight in kg
     weight = 1
 
+    # Motor port configuration
+    left_motor = 'PORT_A'
+    right_motor = 'PORT_D'
+
     # Robot configuration (enumeration) possible values :
     # tandem (2 wheel differential drive - like a roomba)
     configuration = "tandem"
@@ -30,4 +44,3 @@ virtual = true
         [robot.configs.table]
             wheel_slip_acc = 0
             wheel_slip_vel = 0
-

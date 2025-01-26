@@ -14,7 +14,23 @@ MOTOR_PORTS = enum.Enumeration("""
     PORT_D,
 """)
 
+def validMotorPort(port):
+    return port == MOTOR_PORTS.PORT_A or port == MOTOR_PORTS.PORT_B or port == MOTOR_PORTS.PORT_C or port == MOTOR_PORTS.PORT_D
+
 class HardwareInterface:
+    # def __init__(self):
+    #     raise "Cannot instantiate Hardware Interface"
+    
+    def update(self, dt):
+        """Update the underlying hardware.
+
+        This currently does nothing for robots not running virtually.
+
+        Args:
+            dt (float): Delta time (s).
+        """
+        raise "Method not defined"
+    
     def set_motor_power(self, port, power):
         """
         Set the motor power in percent

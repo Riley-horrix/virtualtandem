@@ -7,6 +7,9 @@ class PhysicalInterface(hw.HardwareInterface):
     def __init__(self):
         print("Physical Interface Initialising")
 
+    def update(self, dt):
+        pass
+
     def set_motor_power(self, port, power):
         return bp.set_motor_power(port, power)
 
