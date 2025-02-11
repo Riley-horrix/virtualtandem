@@ -48,7 +48,7 @@ if __name__ == '__main__':
     points = []
     orientations = []
     for i in range(1, 10):
-        points.append((i / 10.0, i / 10.0))
+        points.append((i / 10.0, i*i / 100.0))
         orientations.append(i * 36.0)
 
     for i in range(1, 9):

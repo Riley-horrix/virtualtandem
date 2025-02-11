@@ -6,9 +6,10 @@ type = "FORWARDS"
 distance = 0.4
 power = 0.5
 
-# [[commands]]
-# type = "MOVEMENT"
-# distance = 0.4
+[[commands]]
+type = "TURN"
+angle = 90
+power = 0.5
 
 [robot]
     # Wheel base in metres measured from the outside of each wheel 
