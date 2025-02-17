@@ -3,23 +3,23 @@ virtual = true
 # Command list
 [[commands]]
 type = "FORWARDS"
-distance = 0.4
+distance = 1.0
 power = 0.5
 
-[[commands]]
-type = "TURN"
-angle = 90
-power = 0.5
+# [[commands]]
+# type = "TURN"
+# angle = 90
+# power = 0.5
 
 [robot]
     # Wheel base in metres measured from the outside of each wheel 
-    outer_wheel_base = 0.168
+    outer_wheel_base = 0.25
 
     # Wheel base in metres measured from the inside of each wheel 
-    inner_wheel_base = 0.129
+    inner_wheel_base = 0.2
 
     # Wheel radius in metres
-    wheel_radius = 0.065
+    wheel_radius = 0.05
 
     # Default terrain configuration
     default_terrain = "carpet"

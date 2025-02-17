@@ -4,7 +4,7 @@ import common as cm
 
 class VirtualInterface(hw.HardwareInterface):
     def __init__(self):
-        print("Virtual Interface Initialising")
+        print("[virtualInterface] Initialising")
         self.virtualRobot = vr.VirtualRobot()
 
     def update(self, dt):
@@ -15,6 +15,7 @@ class VirtualInterface(hw.HardwareInterface):
         Args:
             dt (float): Delta time (s).
         """
+        print("updating virtual robot")
         self.virtualRobot.update(dt)
 
     def set_motor_power(self, port, power):
@@ -27,7 +28,7 @@ class VirtualInterface(hw.HardwareInterface):
         """
 
         if not hw.validMotorPort(port):
-            print(f"Virtual Interface: Port not valid, port : {port}")
+            print(f"[virtualInterface]: Port not valid, port : {port}")
             return
         
         if power == 128:
@@ -35,7 +36,7 @@ class VirtualInterface(hw.HardwareInterface):
         elif cm.bounded(power, -100.0, 100.0):
             self.virtualRobot.set_motor_power(port, power)
         else:
-            print(f"Virtual Interface: Power exceeds limits, power : {power}")
+            print(f"[virtualInterface]: Power exceeds limits, power : {power}")
             return
 
     def set_motor_position(self, port, position):
@@ -48,10 +49,10 @@ class VirtualInterface(hw.HardwareInterface):
         """
 
         if not hw.validMotorPort(port):
-            print(f"Virtual Interface: Port not valid, port : {port}")
+            print(f"[virtualInterface]: Port not valid, port : {port}")
             return
         
-        self.virtualRobot.set_motor_position(port, round(position) % 360)
+        self.virtualRobot.set_motor_position(port, round(position))
 
     def set_motor_position_relative(self, port, degrees): 
         """
@@ -139,7 +140,7 @@ class VirtualInterface(hw.HardwareInterface):
 
         Returns the encoder position in degrees
         """
-        raise "Method not defined"
+        return self.virtualRobot.get_encoder(port)
 
 
     def offset_motor_encoder(self, port, position):

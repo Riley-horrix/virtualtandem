@@ -7,8 +7,8 @@ class Motor:
         self.config = config_type
         with open("config/motor_config.toml") as stream:
             try:
-                self.config = toml.load(stream)
-                print(self.config[config_type])
+                self.config = toml.load(stream)[config_type]
+                print(self.config)
             except toml.TomlDecodeError as err:
                 print(err)
                 sys.exit(-1)
@@ -26,8 +26,12 @@ class Motor:
         """
         # Calculate normal rpm from power and bound it by the torque
         self.encoder += self.ang_vel * dt * self.config['encoder_degrees']
+        print("----- MOTOR ENCODER -----",self.encoder)
         rpm = min(self.config['rpm_power_a'] * power, self.config['rpm_torque_a'] + self.config['rpm_torque_b'] * torque)
-        self.ang_vel = rpm / 360.0
+
+        self.ang_vel = rpm * 6.0
+
+        return dt
 
     def getEncoder(self) -> int:
         """Get the encoder value for the motor.
@@ -35,7 +39,7 @@ class Motor:
         Returns:
             int: The current motor encoder value.
         """
-        return self.encoder
+        return round(self.encoder)
     
     def getVelocity(self) -> float:
         """Get the current angular velocity of the motor.

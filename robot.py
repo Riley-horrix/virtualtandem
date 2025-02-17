@@ -4,10 +4,12 @@ import time
 import numpy as np
 
 import hardware.hardwareInterface as hw
-import hardware.enumeration as enum
+
 import common as cm
 
-GOAL_COMPLETE_DISTANCE = 0.1
+import graphics.robotGraphics as graphics
+
+GOAL_COMPLETE_DISTANCE = 5
 
 def getHardware(is_virtual) -> hw.HardwareInterface:
     if is_virtual:
@@ -38,7 +40,11 @@ class Robot:
         commandInd = 0
         currentTime = time.time()
         previousTime = time.time()
+        time.sleep(1.0)
         while True:
+            previousTime = currentTime
+            currentTime = time.time()
+
             if commandInd >= len(self.config['commands']) and self.ready:
                 break
             if self.ready:
@@ -46,12 +52,20 @@ class Robot:
                 self.currentCommandState = ()
                 commandInd += 1
 
-            dt = currentTime - previousTime
+            dt = 0.02
 
             self.update(dt)
             self.hw.update(dt)
+
+        try:
+            print("\nPress Ctrl-C to quit")
+            while True:
+                pass
+        except KeyboardInterrupt:
+            return
     
     def update(self, dt):
+        time.sleep(0.07)
         match self.currentCommand['type']:
             case "FORWARDS":
                 self.updateForwards(dt)
@@ -59,15 +73,19 @@ class Robot:
                 print(f"Robot: Unrecognized command : {self.currentCommand['type']}")
 
     def updateForwards(self, dt):
+        self.hw.update(dt)
+        left_motor = self.__get_hardware_motor_port__(True)
+        right_motor = self.__get_hardware_motor_port__(False)
         if self.ready:
             self.ready = False
+            # TODO : Add tuned correction terms here for wheel rotations
             rotations = self.currentCommand['distance'] / (2 * np.pi * self.config['robot']['wheel_radius'])
-            self.encoderTargetLeft = self.hw.get_motor_encoder(self.__get_hardware_motor_port__(True)) + rotations * 360
-            self.encoderTargetRight = self.hw.get_motor_encoder(self.__get_hardware_motor_port__(False)) + rotations * 360
-            self.hw.set_motor_position(self.__get_hardware_motor_port__(True), self.encoderTargetLeft)
-            self.hw.set_motor_position(self.__get_hardware_motor_port__(False), self.encoderTargetRight)
+            self.encoderTargetLeft = self.hw.get_motor_encoder(left_motor) + rotations * 360
+            self.encoderTargetRight = self.hw.get_motor_encoder(right_motor) + rotations * 360
+            self.hw.set_motor_position(left_motor, self.encoderTargetLeft)
+            self.hw.set_motor_position(right_motor, self.encoderTargetRight)
 
-        if abs(self.hw.get_motor_encoder(self.__get_hardware_motor_port__(True)) - self.encoderTargetLeft) < GOAL_COMPLETE_DISTANCE:
+        if abs(self.hw.get_motor_encoder(left_motor) - self.encoderTargetLeft) < GOAL_COMPLETE_DISTANCE:
             self.ready = True
             return
 

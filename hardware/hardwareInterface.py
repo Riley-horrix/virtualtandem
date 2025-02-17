@@ -1,13 +1,13 @@
-import hardware.enumeration as enum
+from common import Enumeration
 
-SENSOR_PORTS = enum.Enumeration("""
+SENSOR_PORTS = Enumeration("""
     PORT_1,
     PORT_2,
     PORT_3,
     PORT_4,
 """)
 
-MOTOR_PORTS = enum.Enumeration("""
+MOTOR_PORTS = Enumeration("""
     PORT_A,
     PORT_B,
     PORT_C,
