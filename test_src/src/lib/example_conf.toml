@@ -1,0 +1,9 @@
+[test1]
+name = "John"
+time = 123
+money = 16.2
+
+[test2]
+name = "Adam"
+time = 999
+money = -16.2

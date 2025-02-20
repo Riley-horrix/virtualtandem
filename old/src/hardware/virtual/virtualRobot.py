@@ -50,7 +50,7 @@ class VirtualRobot:
         self.orientation = 0
 
         window = gp.GraphWin("VirtualTandem", 800, 800)
-        window.setCoords(-3, -3, 3, 3)
+        window.setCoords(-2, -2, 2, 2)
 
         self.graphics = robGraphics.RobotGraphics(window, self.config['inner_wheel_base'], self.config['wheel_radius'], (self.config['outer_wheel_base'] - self.config['inner_wheel_base']) / 2)
         self.graphics.updateRobot(self.x, self.y, self.orientation)
