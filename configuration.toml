@@ -1,2 +1,9 @@
 [Sonar]
 interval_ms = 50
+
+[MCPositionEstimator]
+std_x = 0.1
+std_y = 0.1
+std_theta = 1
+localisation = "continuous"
+num_particles = 100

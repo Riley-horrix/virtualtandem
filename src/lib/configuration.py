@@ -1,13 +1,18 @@
 import sys
+import time
+
 import toml
 
-from typing import TypeVar, Generic
+from typing import TypeVar, Generic, get_args, get_origin
+
 
 class ConfigurationException(Exception):
     def __init__(self, message):
         super().__init__(message)
 
+
 T = TypeVar('T')
+
 class _TypedConfiguration(Generic[T]):
     def __init__(self, config):
         self.config = config
@@ -15,7 +20,12 @@ class _TypedConfiguration(Generic[T]):
     def get_conf(self, obj: str, config: str, default, fail, t_str) -> T:
         if obj in self.config:
             if config in self.config[obj]:
-                if type(self.config[obj][config]) == self.__orig_class__.__args__[0]:
+                if get_origin(self.__orig_class__.__args__[0]) is list and type(self.config[obj][config]) == list:
+                    if all(isinstance(x, get_args(self.__orig_class__.__args__[0])) for x in self.config[obj][config]):
+                        return self.config[obj][config]
+                    elif fail:
+                        raise ConfigurationException(f"[configuration]: '{config}' in '{obj}' is not a list of floats!")
+                elif type(self.config[obj][config]) == self.__orig_class__.__args__[0]:
                     return self.config[obj][config]
                 elif fail:
                     raise ConfigurationException(f"[configuration]: '{config}' in '{obj}' is not a {t_str}!")
@@ -33,8 +43,7 @@ class Configuration:
             try:
                 self.config = toml.load(stream)
             except toml.TomlDecodeError as err:
-                print(err)
-                sys.exit(-1)
+                raise ConfigurationException(f"[configuration]: {err}")
 
     def get_conf_num_f(self, obj: str, config: str, default: float = 0.0, fail: bool = True) -> float:
         type_config = _TypedConfiguration[float](self.config)
@@ -48,7 +57,17 @@ class Configuration:
         type_config = _TypedConfiguration[str](self.config)
         return type_config.get_conf(obj, config, default, fail, "str")
 
+    def get_conf_list_f(self, obj: str, config: str, default: list[float] = [], fail: bool = True) -> list[float]:
+        type_config = _TypedConfiguration[list[float]](self.config)
+        return type_config.get_conf(obj, config, default, fail, "list of floats")
+
+    def get_conf_list(self, obj: str, config: str, default: list[int] = [], fail: bool = True) -> list[int]:
+        type_config = _TypedConfiguration[list[int]](self.config)
+        return type_config.get_conf(obj, config, default, fail, "list of ints")
+
+
 global_conf = Configuration("configuration.toml")
+
 
 class Configurable:
     def __init__(self):

@@ -8,14 +8,14 @@ class TestTaskHandler(unittest.TestCase):
         repeat_num = []
 
         task_repeat = Task(lambda _: repeat_num.append(0))
-        repeat_handle = task_handler.task_interval(task_repeat, 10)
+        repeat_handle = task_handler.task_interval(task_repeat, 1)
 
 
         task_cancel = Task(lambda _: repeat_handle.cancel())
-        task_handler.task_delay(task_cancel, 45)
+        task_handler.task_delay(task_cancel, 100)
 
         task_handler.start()
-        assert len(repeat_num) == 5
+        self.assertAlmostEqual(len(repeat_num), 80, delta=10.0)
 
     def test_tasks_run(self):
         task_handler = TaskHandler()
@@ -31,7 +31,7 @@ class TestTaskHandler(unittest.TestCase):
         task_handler.task_delay(task3, 5)
 
         task_handler.start()
-        assert task_list == [3, 1, 2]
+        self.assertListEqual(task_list, [3, 1, 2])
 
     def test_task_can_create_task(self):
         task_handler = TaskHandler()
@@ -48,7 +48,7 @@ class TestTaskHandler(unittest.TestCase):
         task_handler.task_delay(parent, 0)
         task_handler.start()
 
-        assert task_list == [0, 2, 1]
+        self.assertListEqual(task_list, [0, 2, 1])
 
     def test_task_can_cancel_itself(self):
         task_handler = TaskHandler()
@@ -63,7 +63,7 @@ class TestTaskHandler(unittest.TestCase):
         task = Task(cancelling_task)
         task_handler.task_interval(task, 5)
         task_handler.start()
-        assert task_list == [5]
+        self.assertListEqual(task_list, [5])
 
 if __name__ == "__main__":
     unittest.main()

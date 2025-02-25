@@ -7,10 +7,10 @@ class TaskHandle:
     """
     def __init__(self, uid: int, task_handler: "TaskHandler"):
         self.uid: int = uid
-        self.cancel = lambda: task_handler.remove_task(self)
+        self.task_handler = task_handler
 
     def cancel(self):
-        pass
+        self.task_handler.remove_task(self)
 
 
 def task_function(_: TaskHandle) -> None:
