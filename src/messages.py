@@ -48,10 +48,14 @@ class SonarReading(TimedMessage):
 
     Attributes:
         reading_m: A float representing the sonar reading in meters.
+        std: A float representing the uncertainty of the sonar reading.
     """
-    def __init__(self, reading_m: float):
+    def __init__(self, reading_m: float, std: float, constant_std: float, normal_std: float):
         super().__init__(MessageId.SONAR_READING)
         self.reading_m = reading_m
+        self.std = std
+        self.constant_std = constant_std
+        self.normal_std = normal_std
 
 class NavigationEstimate(TimedMessage):
     """
@@ -90,16 +94,20 @@ class TerminateRequest(TimedMessage):
 
 class MoveEstimate(TimedMessage):
     """
-    Represents an actual movement message with delta coordinates and orientation.
+    Represents an estimate of movement including distance, angle, and their respective uncertainties.
 
+    This class inherits from the TimedMessage class and is used for encapsulating
+    movement estimate data such as distance moved, angle turned, and their
+    associated standard deviations.
 
-    Attributes:
-        x: The delta x-coordinate of the actual position.
-        y: The delta y-coordinate of the actual position.
-        theta: The orientation angle (in radians) of the actual position.
+    :ivar distance: Estimated distance moved.
+    :ivar theta: Estimated angle turned in radians.
+    :ivar distance_std: Standard deviation of the estimated distance.
+    :ivar theta_std: Standard deviation of the estimated angle in radians.
     """
-    def __init__(self, x: float, y: float, theta: float):
+    def __init__(self, distance: float, theta: float, distance_std: float, theta_std: float):
         super().__init__(MessageId.MOVE_ESTIMATE)
-        self.x = x
-        self.y = y
+        self.distance = distance
         self.theta = theta
+        self.distance_std = distance_std
+        self.theta_std = theta_std

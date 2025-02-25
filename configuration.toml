@@ -5,5 +5,14 @@ interval_ms = 50
 std_x = 0.1
 std_y = 0.1
 std_theta = 1
+
 localisation = "continuous"
+start_x = 0.0
+start_y = 0.0
+start_theta = 0.0
+
 num_particles = 100
+
+[Geofence]
+points_x = [0.0, 2.0, 2.0, 0.0]
+points_y = [0.0, 0.0, 2.0, 2.0]

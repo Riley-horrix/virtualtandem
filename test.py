@@ -3,11 +3,10 @@ from colour_runner import runner
 
 # Import all modules
 # src
-from test_src.src import task_handler_test
-from test_src.src import message_test
+from test_src.src import task_handler_test, message_test
 
 # lib
-from test_src.src.lib import configuration_test
+from test_src.src.lib import configuration_test, geofence_test
 
 def test_run():
     suite = unittest.TestSuite()
@@ -22,6 +21,7 @@ def test_run():
 
         # lib
         load_mod(configuration_test),
+        load_mod(geofence_test),
     ])
 
     # unittest.TextTestRunner(verbosity=3).run(suite)

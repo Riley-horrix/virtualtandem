@@ -1,5 +1,4 @@
-import sys
-import time
+from abc import abstractmethod, ABC
 
 import toml
 
@@ -30,10 +29,11 @@ class _TypedConfiguration(Generic[T]):
                 elif fail:
                     raise ConfigurationException(f"[configuration]: '{config}' in '{obj}' is not a {t_str}!")
             elif fail:
-                raise ConfigurationException(f"[configuration]: '{obj}' is not defined in '{config}'")
+                raise ConfigurationException(f"[configuration]: '{config}' is not defined in '{obj}'")
         elif fail:
             raise ConfigurationException(f"[configuration]: '{obj}' is not a valid configuration")
         else:
+            print(f"[configuration]: '{config}' not found in '{obj}', using default value {default}")
             return default
 
 
@@ -68,7 +68,29 @@ class Configuration:
 
 global_conf = Configuration("configuration.toml")
 
+class Configurable(ABC):
+    def __init__(self, object_str: str, conf: Configuration = global_conf):
+        self.object_str = object_str
+        self.conf = conf
 
-class Configurable:
-    def __init__(self):
-        self.conf = global_conf
+    @abstractmethod
+    def initialise(self, conf: Configuration = None):
+        pass
+
+    def set_conf(self, conf: Configuration):
+        self.conf = conf
+
+    def get_conf_num_f(self, config: str, default: float = 0.0, fail: bool = True) -> float:
+        return self.conf.get_conf_num_f(self.object_str, config, default = default, fail=fail)
+
+    def get_conf_num(self, config: str, default: int = 0, fail: bool = True) -> int:
+        return self.conf.get_conf_num(self.object_str, config, default = default, fail=fail)
+
+    def get_conf_str(self, config: str, default: str = "", fail: bool = True) -> str:
+        return self.conf.get_conf_str(self.object_str, config, default = default, fail=fail)
+
+    def get_conf_list_f(self, config: str, default: list[float] = [], fail: bool = True) -> list[float]:
+        return self.conf.get_conf_list_f(self.object_str, config, default = default, fail=fail)
+
+    def get_conf_list(self, config: str, default: list[int] = [], fail: bool = True) -> list[int]:
+        return self.conf.get_conf_list(self.object_str, config, default = default, fail=fail)
