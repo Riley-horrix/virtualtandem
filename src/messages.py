@@ -67,10 +67,11 @@ class NavigationEstimate(TimedMessage):
     y : float
         The positional estimate along the y-axis.
     """
-    def __init__(self, x: float, y: float):
+    def __init__(self, x: float, y: float, theta: float):
         super().__init__(MessageId.NAVIGATION_ESTIMATE)
         self.x = x
         self.y = y
+        self.theta = theta
 
 class MoveRequest(TimedMessage):
     """
@@ -101,13 +102,11 @@ class MoveEstimate(TimedMessage):
     associated standard deviations.
 
     :ivar distance: Estimated distance moved.
-    :ivar theta: Estimated angle turned in radians.
     :ivar distance_std: Standard deviation of the estimated distance.
     :ivar theta_std: Standard deviation of the estimated angle in radians.
     """
-    def __init__(self, distance: float, theta: float, distance_std: float, theta_std: float):
+    def __init__(self, distance: float, distance_std: float, theta_std: float):
         super().__init__(MessageId.MOVE_ESTIMATE)
         self.distance = distance
-        self.theta = theta
         self.distance_std = distance_std
         self.theta_std = theta_std

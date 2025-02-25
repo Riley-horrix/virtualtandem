@@ -1,0 +1,10 @@
+[MCPositionEstimator]
+localisation = "continuous"
+start_x = 0.0
+start_y = 0.0
+start_hed = 30.0
+num_particles = 10
+
+[Geofence]
+points_x = [-10.0, 20.0, 20.0, -10.0, -10.0]
+points_y = [-10.0, -10.0, 20.0, 20.0, -10.0]

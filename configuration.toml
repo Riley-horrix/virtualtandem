@@ -1,5 +1,9 @@
 [Sonar]
 interval_ms = 50
+std = 0.01
+normal_std = 0.56
+constant_std = 0.1
+virtual = "true"
 
 [MCPositionEstimator]
 std_x = 0.1
@@ -14,5 +18,5 @@ start_theta = 0.0
 num_particles = 100
 
 [Geofence]
-points_x = [0.0, 2.0, 2.0, 0.0]
-points_y = [0.0, 0.0, 2.0, 2.0]
+points_x = [0.0, 2.0, 2.0, 0.0, 0.0]
+points_y = [0.0, 0.0, 2.0, 2.0, 0.0]

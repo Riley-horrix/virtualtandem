@@ -27,7 +27,7 @@ class Geofence(Configurable):
         y_points = self.conf.get_conf_list_f("Geofence", "points_y")
         self.points = list(zip(x_points, y_points))
 
-        if self.points[0] != self.points[-1]:
+        if self.points[0][0] != self.points[-1][0] or self.points[0][1] != self.points[-1][1] :
             raise ConfigurationException("[Geofence]: Geofence points must define a closed polygon.")
         
         for point in self.points:

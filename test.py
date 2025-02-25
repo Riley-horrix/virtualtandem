@@ -3,7 +3,7 @@ from colour_runner import runner
 
 # Import all modules
 # src
-from test_src.src import task_handler_test, message_test
+from test_src.src import task_handler_test, message_test, mcEstimator_test
 
 # lib
 from test_src.src.lib import configuration_test, geofence_test
@@ -18,6 +18,7 @@ def test_run():
         # src
         load_mod(task_handler_test),
         load_mod(message_test),
+        load_mod(mcEstimator_test),
 
         # lib
         load_mod(configuration_test),

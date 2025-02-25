@@ -1,5 +1,6 @@
 import random
 import math
+import time
 from statistics import NormalDist
 from enum import Enum
 
@@ -23,7 +24,7 @@ class Particle:
         being in its current position.
     """
     def __init__(self, position: tuple[float, float, float], initial_weight: float):
-        self.position = position
+        self.position = list(position)
         self.weight = initial_weight
 
     def move(self, x: float, y: float, theta: float):
@@ -34,7 +35,9 @@ class Particle:
         :param y: The displacement in the y-axis.
         :param theta: The rotation angle in radians.
         """
-        self.position += (x, y, theta)
+        self.position[0] += x
+        self.position[1] += y
+        self.position[2] += theta
 
     def get_x(self):
         return self.position[0]
@@ -59,18 +62,18 @@ class NormalParticle(Particle):
     def __init__(self,  position: tuple[float, float, float], initial_weight: float):
         super().__init__(position, initial_weight)
 
-    def move_std(self, distance: float, theta: float, stds: tuple[float, float]):
+    def move_std(self, distance: float, stds: tuple[float, float]):
         """
         Move the particle based on the provided standard deviations.
 
         :param distance: How far the particle moved.
-        :param theta: The direction of travel in radians.
         :param stds: The standard deviations for each of the positional and directional components.
         """
         distance = random.normalvariate(distance, stds[0])
-        theta = random.normalvariate(theta, stds[1])
+        self.position[2] += random.normalvariate(0, stds[1])
+        self.position[0] += math.sin(self.position[2]) * distance
+        self.position[1] += math.cos(self.position[2]) * distance
 
-        self.position += (math.cos(theta) * distance, math.sin(theta) * distance, theta)
 
 
 class LocalisationMethod(Enum):
@@ -79,20 +82,41 @@ class LocalisationMethod(Enum):
 
     @staticmethod
     def from_str(string):
-        if string.upper() == "continuous":
+        if string.lower() == "continuous":
             return LocalisationMethod.CONTINUOUS
-        elif string.upper() == "global":
+        elif string.lower() == "global":
             return LocalisationMethod.GLOBAL
         else:
             raise ConfigurationException("[MCPositionEstimator] Invalid localisation option - must be 'continuous' or 'global'.")
 
 class MonteCarloPositionEstimator(Consumer, Producer, Configurable):
-    def __init__(self, hub: MessageHub):
-        super().__init__(hub)
-        self.std_x: float = 0.0
-        self.std_y: float = 0.0
-        self.std_theta: float = 0.0
+    """
+    MonteCarloPositionEstimator is responsible for estimating position using the Monte Carlo
+    Localization algorithm. It utilizes particles to represent potential positions and combines sensory
+    readings to refine the position estimate. The class integrates with defined message mechanisms
+    to handle configuration, sensory data, and movement updates.
 
+    Through particle filter techniques, it predicts positions based on a probabilistic approach.
+    Its main goals are initialization of particles, estimation of the position, handling sensory
+    messages, and particle resampling. It also maintains adherence to geofence constraints ensuring
+    particles are within a defined boundary during estimation.
+
+    :ivar localisation_str: Localisation mode as a string.
+    :ivar localisation: Localisation mode as an enumeration.
+    :ivar start_x: Starting x-coordinate of the estimation.
+    :ivar start_y: Starting y-coordinate of the estimation.
+    :ivar start_theta: Starting theta (angle) of the estimation.
+
+    :ivar num_particles: Number of particles used in the estimation.
+    :ivar particles: List of particles used in the estimation.
+    :ivar geofence: Geofence object to constrain particles within boundaries.
+
+    :ivar navigation_estimate: Navigation estimate message storing calculated position and orientation.
+    """
+    def __init__(self, hub: MessageHub):
+        Consumer.__init__(self, hub)
+        Producer.__init__(self, hub)
+        Configurable.__init__(self, "MCPositionEstimator")
         self.localisation_str: str = "global"
         self.localisation: LocalisationMethod = LocalisationMethod.GLOBAL
 
@@ -100,11 +124,11 @@ class MonteCarloPositionEstimator(Consumer, Producer, Configurable):
         self.start_y: float = 0.0
         self.start_theta: float = 0.0
 
-        self.num_particles: int = 100
+        self.num_particles: int = 0
         self.particles: list[NormalParticle] = []
-        self.initialise_particles()
 
         self.geofence: Geofence = Geofence()
+        self.navigation_estimate: NavigationEstimate = NavigationEstimate(self.start_x, self.start_y, self.start_theta)
 
     def initialise(self, conf: Configuration = None):
         if conf is not None:
@@ -116,11 +140,14 @@ class MonteCarloPositionEstimator(Consumer, Producer, Configurable):
         if self.localisation == LocalisationMethod.CONTINUOUS:
             self.start_x = self.conf.get_conf_num_f("MCPositionEstimator", "start_x")
             self.start_y = self.conf.get_conf_num_f("MCPositionEstimator", "start_y")
-            self.start_theta = self.conf.get_conf_num_f("MCPositionEstimator", "start_theta")
+            start_theta_deg = self.conf.get_conf_num_f("MCPositionEstimator", "start_hed")
+            self.start_theta = math.radians(start_theta_deg)
 
         self.num_particles = self.conf.get_conf_num("MCPositionEstimator", "num_particles")
 
-        self.geofence.initialise()
+        self.geofence.initialise(conf)
+        self.navigation_estimate: NavigationEstimate = NavigationEstimate(self.start_x, self.start_y, self.start_theta)
+        self.initialise_particles()
 
     def initialise_particles(self) -> None:
         # Initialise particles
@@ -138,22 +165,38 @@ class MonteCarloPositionEstimator(Consumer, Producer, Configurable):
 
     def handle_move_estimate(self, move_estimate: MoveEstimate):
         distance: float = move_estimate.distance
-        theta: float = move_estimate.theta
-
         # Allowing the motor to define the variations allows it to give its own
         # variation estimations
         distance_std: float = move_estimate.distance_std
         theta_std: float = move_estimate.theta_std
 
+        print("----- Particles -----")
+        for p in self.particles:
+            print(p.position)
+
         # Update particle positions
         for particle in self.particles:
-            particle.move_std(distance, theta, (distance_std, theta_std))
+            particle.move_std(distance, (distance_std, theta_std))
 
         # Remove particles not in the bounding box
         self.particles = [particle for particle in self.particles if self.geofence.inside_geofence(particle.position[0], particle.position[1])]
         if len(self.particles) != self.num_particles:
             # Update weights to sum to zero
             self.normalise_weights()
+
+        estimate: tuple[float, float, float] = self.estimate_position()
+        self.navigation_estimate.x = estimate[0]
+        self.navigation_estimate.y = estimate[1]
+        self.navigation_estimate.theta = estimate[2]
+        self.deliver(self.navigation_estimate)
+
+    def estimate_position(self) -> tuple[float, float, float]:
+        estimate: list[float] = [0.0, 0.0, 0.0]
+        for particle in self.particles:
+            estimate[0] += particle.get_x() * particle.weight
+            estimate[1] += particle.get_y() * particle.weight
+            estimate[2] += particle.get_theta() * particle.weight
+        return estimate[0], estimate[1], estimate[2]
 
     def normalise_weights(self):
         total_weight: float = sum(particle.weight for particle in self.particles)
@@ -188,24 +231,19 @@ class MonteCarloPositionEstimator(Consumer, Producer, Configurable):
 
     def resample_particles(self):
         # Build cumulative list with indexes
-        cumulative_weights: list[tuple[float, float]] = [(self.particles[0].weight, 0)]
+        cumulative_weights: list[float] = [self.particles[0].weight]
         for i, particle in enumerate(self.particles[1:]):
-            cumulative_weights.append((cumulative_weights[i - 1][0] + particle.weight, i + 1))
+            cumulative_weights.append(cumulative_weights[i - 1] + particle.weight)
 
         new_particles: list[NormalParticle] = []
         for _ in range(self.num_particles):
-            rand = random.uniform(0, cumulative_weights[-1][0])
+            rand = random.uniform(0, cumulative_weights[-1])
+            # TODO Binary search
+            found = 0
+            while rand > cumulative_weights[found]:
+                found += 1
 
-            # Binary search
-            low, high = 0, len(cumulative_weights) - 1
-            while low < high:
-                mid = (low + high) // 2
-                if cumulative_weights[mid][0] < rand:
-                    low = mid + 1
-                else:
-                    high = mid
-            index = low
-            new_particles.append(NormalParticle(self.particles[index].position, 1.0 / self.num_particles))
+            new_particles.append(NormalParticle(self.particles[found].position, 1.0 / self.num_particles))
 
     def send(self, message: Message):
         if isinstance(message, SonarReading):
