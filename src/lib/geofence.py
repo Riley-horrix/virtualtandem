@@ -3,6 +3,7 @@ import random
 
 from src.lib.configuration import Configurable, ConfigurationException, Configuration
 
+
 class Geofence(Configurable):
     """
     Represents a geofence defined by a series of x,y points.
@@ -13,8 +14,9 @@ class Geofence(Configurable):
     points are assumed to be the same.
     """
     def __init__(self):
-        super().__init__("Geofence")
-        self.points: list(tuple[float, float]) = []
+        Configurable.__init__("Geofence")
+
+        self.points: list[tuple[float, float]] = []
         self.min_x: float = 0.0
         self.max_x: float = 0.0
         self.min_y: float = 0.0

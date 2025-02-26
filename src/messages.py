@@ -8,11 +8,15 @@ class MessageId(Enum):
 
     These must all be unique.
     """
-    SONAR_READING: int =        0
-    NAVIGATION_ESTIMATE: int =  1
-    MOVE_REQUEST: int =         2
-    TERMINATE_REQUEST: int =    3
-    MOVE_ESTIMATE: int =        4
+    SONAR_READING: int =            0
+    VIRTUAL_SONAR_REQUEST: int =    1
+    VIRTUAL_SONAR_RESPONSE: int =   2
+
+    NAVIGATION_ESTIMATE: int =      10
+    MOVE_ESTIMATE: int =            11
+
+    MOVE_REQUEST: int =             20
+    TERMINATE_REQUEST: int =        21
 
 
 class Message:
@@ -110,3 +114,18 @@ class MoveEstimate(TimedMessage):
         self.distance = distance
         self.distance_std = distance_std
         self.theta_std = theta_std
+
+class VirtualSonarRequest(TimedMessage):
+    """
+    Represents a request for a virtual sonar reading from the geofence.
+    """
+    def __init__(self):
+        super().__init__(MessageId.VIRTUAL_SONAR_REQUEST)
+
+class VirtualSonarResponse(TimedMessage):
+    """
+    Represents a response from the geofence with a virtual sonar reading.
+    """
+    def __init__(self, reading_m: float):
+        super().__init__(MessageId.VIRTUAL_SONAR_RESPONSE)
+        self.reading_m = reading_m

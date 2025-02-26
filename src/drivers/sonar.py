@@ -1,6 +1,6 @@
 from src.message import Producer, MessageHub, Consumer
 
-from src.messages import SonarReading, MessageId, Message, TerminateRequest
+from src.messages import SonarReading, MessageId, Message, TerminateRequest, VirtualSonarRequest, VirtualSonarResponse
 
 from src.lib.configuration import Configurable, Configuration
 from src.task_handler import TaskHandler, Task, TaskHandle
@@ -29,19 +29,21 @@ class Sonar(Producer, Consumer, Configurable):
         self.constant_std = self.get_conf_num_f("constant_std")
         self.normal_std = self.get_conf_num_f("normal_std")
 
-    def _emit_sonar(self):
-        reading_m = self._read_sonar_m()
+        if self.virtual:
+            self.task_handler.task_interval(Task(self._request_virtual_sonar), 100)
+        else:
+            self.task_handler.task_interval(Task(self._read_and_emit_sonar), 100)
+
+    def _request_virtual_sonar(self):
+        self.deliver(VirtualSonarRequest())
+
+    def _read_and_emit_sonar(self):
+        reading_m = 1.0
         self.deliver(SonarReading(reading_m, self.std, self.constant_std, self.normal_std))
 
-    def _read_sonar_m(self) -> float:
-        if self.virtual:
-            # Reference the virtual geofence and ray cast
-            return 1.0
-        else:
-            # Use brickpi3 to read the sensor
-            return 0.0
-
     def send(self, message: Message) -> None:
+        if isinstance(message, VirtualSonarResponse):
+            self.deliver(SonarReading(message.reading_m, self.std, self.constant_std, self.normal_std))
         if isinstance(message, TerminateRequest):
             if self.emit_handle:
                 self.emit_handle.cancel()

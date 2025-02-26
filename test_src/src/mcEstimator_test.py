@@ -1,6 +1,6 @@
 import unittest
 
-from src.mcEstimator import *
+from src.mc_estimator import *
 from src.message import MessageHub
 from src.task_handler import TaskHandler
 from src.lib.configuration import Configuration
