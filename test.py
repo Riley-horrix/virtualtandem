@@ -6,7 +6,7 @@ from colour_runner import runner
 from test_src.src import task_handler_test, message_test, mcEstimator_test
 
 # lib
-from test_src.src.lib import configuration_test, geofence_test
+from test_src.src.lib import configuration_test, geofence_test, math_utils_test
 
 def test_run():
     suite = unittest.TestSuite()
@@ -23,6 +23,7 @@ def test_run():
         # lib
         load_mod(configuration_test),
         load_mod(geofence_test),
+        load_mod(math_utils_test),
     ])
 
     # unittest.TextTestRunner(verbosity=3).run(suite)

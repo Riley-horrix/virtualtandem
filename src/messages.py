@@ -14,6 +14,8 @@ class MessageId(Enum):
 
     NAVIGATION_ESTIMATE: int =      10
     MOVE_ESTIMATE: int =            11
+    TURN_ESTIMATE: int =            12
+    CIRCULAR_MOVE_ESTIMATE: int =   13
 
     MOVE_REQUEST: int =             20
     TERMINATE_REQUEST: int =        21
@@ -79,16 +81,15 @@ class NavigationEstimate(TimedMessage):
 
 class MoveRequest(TimedMessage):
     """
-    Represents a move request message with positional coordinates.
+    Represents a request to perform a movement action.
 
-    Attributes:
-    x (float): The x coordinate for the move request.
-    y (float): The y coordinate for the move request.
+    :ivar theta: The angle of rotation for the move request.
+    :ivar distance: The distance to move for the move request.
     """
-    def __init__(self, x: float, y: float):
+    def __init__(self, theta: float, distance: float):
         super().__init__(MessageId.MOVE_REQUEST)
-        self.x = x
-        self.y = y
+        self.theta = theta
+        self.distance = distance
 
 class TerminateRequest(TimedMessage):
     """
@@ -114,6 +115,25 @@ class MoveEstimate(TimedMessage):
         self.distance = distance
         self.distance_std = distance_std
         self.theta_std = theta_std
+
+class TurnEstimate(TimedMessage):
+    """
+    Represents an estimate of a turn of the robot.
+
+    :ivar theta: Estimated angle turned in radians.
+    :ivar theta_std: Standard deviation of the estimated angle in radians.
+    """
+    def __init__(self, theta: float, theta_std: float):
+        super().__init__(MessageId.TURN_ESTIMATE)
+        self.theta = theta
+        self.theta_std = theta_std
+
+class CircularMoveEstimate(TimedMessage):
+    def __init__(self, radius: float, angle: float, std: tuple[float, float]):
+        super().__init__(MessageId.CIRCULAR_MOVE_ESTIMATE)
+        self.radius = radius
+        self.angle = angle
+        self.std = std
 
 class VirtualSonarRequest(TimedMessage):
     """

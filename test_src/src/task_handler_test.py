@@ -1,5 +1,8 @@
+import time
 import unittest
+from encodings.hex_codec import hex_decode
 
+from src.lib.utils import Ref
 from src.task_handler import *
 
 class TestTaskHandler(unittest.TestCase):
@@ -64,6 +67,30 @@ class TestTaskHandler(unittest.TestCase):
         task_handler.task_interval(task, 5)
         task_handler.start()
         self.assertListEqual(task_list, [5])
+
+    def test_looping_tasks_dont_hog(self):
+        task_handler = TaskHandler()
+        task_num = Ref(time.time())
+
+        task_counters = [0, 0]
+
+        def looping_task(handle: TaskHandle):
+            if time.time() - task_num.value >= 1.0:
+                handle.cancel()
+                return
+            task_counters[0] += 1
+
+        def other_task(handle: TaskHandle):
+            if time.time() - task_num.value >= 1.0:
+                handle.cancel()
+            task_counters[1] += 1
+
+        task_handler.task_interval(Task(looping_task), 0)
+        task_handler.task_interval(Task(other_task), 100)
+        task_handler.start()
+
+        self.assertGreater(task_counters[1], 8)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -14,7 +14,7 @@ class Geofence(Configurable):
     points are assumed to be the same.
     """
     def __init__(self):
-        Configurable.__init__("Geofence")
+        Configurable.__init__(self, "Geofence")
 
         self.points: list[tuple[float, float]] = []
         self.min_x: float = 0.0

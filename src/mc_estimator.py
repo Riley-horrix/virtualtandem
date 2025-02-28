@@ -1,11 +1,10 @@
 import random
 import math
-import time
 from statistics import NormalDist
 from enum import Enum
 
 from src.lib.geofence import Geofence
-from src.messages import NavigationEstimate, SonarReading, MessageId, MoveEstimate
+from src.messages import NavigationEstimate, SonarReading, MessageId, MoveEstimate, TurnEstimate
 from src.message import Consumer, Producer, Message, MessageHub
 from src.lib.configuration import Configurable, ConfigurationException, Configuration
 
@@ -62,7 +61,7 @@ class NormalParticle(Particle):
     def __init__(self,  position: tuple[float, float, float], initial_weight: float):
         super().__init__(position, initial_weight)
 
-    def move_std(self, distance: float, stds: tuple[float, float]):
+    def move_std(self, distance: float, stds: tuple[float, float]) -> None:
         """
         Move the particle based on the provided standard deviations.
 
@@ -74,6 +73,14 @@ class NormalParticle(Particle):
         self.position[0] += math.sin(self.position[2]) * distance
         self.position[1] += math.cos(self.position[2]) * distance
 
+    def turn_std(self, theta: float, std: float) -> None:
+        """
+        Turn the particle based on the provided standard deviation.
+        :param theta: Angle to turn.
+        :param std: Standard deviation.
+        :return:
+        """
+        self.position[2] += theta + random.normalvariate(0, std)
 
 
 class LocalisationMethod(Enum):
@@ -170,10 +177,6 @@ class MonteCarloPositionEstimator(Consumer, Producer, Configurable):
         distance_std: float = move_estimate.distance_std
         theta_std: float = move_estimate.theta_std
 
-        print("----- Particles -----")
-        for p in self.particles:
-            print(p.position)
-
         # Update particle positions
         for particle in self.particles:
             particle.move_std(distance, (distance_std, theta_std))
@@ -240,19 +243,41 @@ class MonteCarloPositionEstimator(Consumer, Producer, Configurable):
             rand = random.uniform(0, cumulative_weights[-1])
             # TODO Binary search
             found = 0
-            while rand > cumulative_weights[found]:
+            while found < (self.num_particles - 1) and rand > cumulative_weights[found]:
                 found += 1
 
-            new_particles.append(NormalParticle(self.particles[found].position, 1.0 / self.num_particles))
+            x = self.particles[found].position[0]
+            y = self.particles[found].position[1]
+            theta = self.particles[found].position[2]
+
+            new_particles.append(NormalParticle((x, y, theta), 1.0 / self.num_particles))
+
+    def handle_turn_estimate(self, message: TurnEstimate):
+        turn_angle = message.theta
+        turn_std = message.theta_std
+        for particle in self.particles:
+            particle.turn_std(turn_angle, turn_std)
+        self.emit_estimate()
+
+    def emit_estimate(self):
+        estimate: tuple[float, float, float] = self.estimate_position()
+        self.navigation_estimate.x = estimate[0]
+        self.navigation_estimate.y = estimate[1]
+        self.navigation_estimate.theta = estimate[2]
+        self.deliver(self.navigation_estimate)
+
 
     def send(self, message: Message):
         if isinstance(message, SonarReading):
             self.handle_sonar_reading(message)
         elif isinstance(message, MoveEstimate):
             self.handle_move_estimate(message)
+        elif isinstance(message, TurnEstimate):
+            self.handle_turn_estimate(message)
 
     def get_consumed(self) -> list[MessageId]:
         return [
             MessageId.SONAR_READING,
-            MessageId.MOVE_ESTIMATE
+            MessageId.MOVE_ESTIMATE,
+            MessageId.TURN_ESTIMATE,
         ]
