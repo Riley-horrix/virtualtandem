@@ -21,8 +21,13 @@ class TestConfiguration(unittest.TestCase):
         self.assertListEqual(conf.get_conf_list_f("listTest", "times"), [1.0, 2.4, 7.1])
         self.assertListEqual(conf.get_conf_list("listTest", "times_floor"), [1, 2, 7])
 
+        self.assertListEqual(conf.get_conf_list_str("listTest", "string_list"), ["hello", "hi", "goodbye"])
+
         with self.assertRaises(ConfigurationException):
             conf.get_conf_list("listTest", "times")
+
+        with self.assertRaises(ConfigurationException):
+            conf.get_conf_list("listTest", "string_list")
 
     def test_get_conf_fail(self):
         conf = Configuration("test_src/src/lib/example_conf.toml")

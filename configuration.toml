@@ -1,42 +1,109 @@
 [Sonar]
+# Emittion interval
 interval_ms = 50
+
+# Standard deviation of readings
 std = 0.01
+# Standard deviation caused by angle to wall (rads)
 normal_std = 0.56
+# Constant probability of sonar readings (to give better readings for very distributed readings)
 constant_std = 0.1
 
+# Sonar sensor port ("port_n" for n = {1, 2, 3, 4})
+sonar_port = "port_1"
+# Sonar position on the robot (x-axis is inline with the robot's direction)
+position_x = 0
+position_y = 0.15
+
+
 [MCPositionEstimator]
+# Type of localisation ("continuous" or "global")
 localisation = "continuous"
+
+# Starting position
 start_x = 0.0
 start_y = 0.0
 start_theta = 0.0
 
+# Number of particles in the Monte Carlo Simulation
 num_particles = 100
 
+
 [Geofence]
+# X and Y ordinates of a bounding geofence
 points_x = [0.0, 2.0, 2.0, 0.0, 0.0]
 points_y = [0.0, 0.0, 2.0, 2.0, 0.0]
 
+
 [Navigator]
+# X and Y ordinates of waypoints
 waypoints_x = [0.2, 0.2, 0.4]
 waypoints_y = [0.2, 0.4, 0.4]
+# Distance (m) to waypoint to count as complete
 waypoint_threshold = 0.05
+
+# Emit move requests interval
 interval_ms = 100
 
+# Delays on each action
+startup_wait_ms = 1000
+waypoint_wait_ms = 500
+terminate_wait_ms = 1000
+
+
 [MotorController]
-interval_ms  = 50
+# Interval for emitting move estimates
+estimate_interval_ms = 50
+# Interval for sending commands to motors
+command_interval_ms  = 100
+
+# Robot metrics
 wheel_radius = 0.0265
 wheel_base   = 0.212
 
+# Turn encoder offsets
 turn_encoder_a = 1.0
 turn_encoder_b = 1.30
 
+# Move encoder offsets
 move_encoder_a = 1.0
 move_encoder_b = 0.98
 
+# Encoder counts per revolution
 encoder_cpr = 360
 
+# Motor ports
 left_motor  = "port_D"
 right_motor = "port_C"
 
+# Motor configurations
 max_power = 70.0
 max_dps   = 360.0
+
+# Standard deviation calculations
+# std_turn = a * theta + b
+turn_std_a = 0.0
+turn_std_b = 1.0 # 1 degrees
+
+# std_move = a * d + b
+move_std_a = 0.0
+move_std_b = 0.05 # 1cm
+
+# radius = a * radius + b
+radius_std_a = 0.0
+radius_std_b = 0.01 # 1cm
+
+
+[CSVLogger]
+# File to write csv into
+log_file = "log/log.csv"
+message_ids = [
+    0,  # Sonar reading
+    10, # Nav estimate
+    11, # Move estimate
+    12, # Turn estimate
+    13, # Circular move estimate
+    20, # Move request
+    30, # Start request
+    31, # Terminate request
+]

@@ -11,3 +11,8 @@ money = -16.2
 [listTest]
 times = [1.0, 2.4, 7.1]
 times_floor = [1, 2, 7]
+string_list = [
+    "hello",
+    "hi",
+    "goodbye"
+]

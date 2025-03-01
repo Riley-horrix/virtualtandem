@@ -1,3 +1,5 @@
+from abc import ABC, abstractmethod
+
 from src.lib.time_utils import current_time_ms
 
 from enum import Enum
@@ -9,8 +11,6 @@ class MessageId(Enum):
     These must all be unique.
     """
     SONAR_READING: int =            0
-    VIRTUAL_SONAR_REQUEST: int =    1
-    VIRTUAL_SONAR_RESPONSE: int =   2
 
     NAVIGATION_ESTIMATE: int =      10
     MOVE_ESTIMATE: int =            11
@@ -18,10 +18,23 @@ class MessageId(Enum):
     CIRCULAR_MOVE_ESTIMATE: int =   13
 
     MOVE_REQUEST: int =             20
-    TERMINATE_REQUEST: int =        21
+
+    START_REQUEST: int =            30
+    TERMINATE_REQUEST: int =        31
+
+all_message_ids: list[MessageId] = [
+    MessageId.SONAR_READING,
+    MessageId.NAVIGATION_ESTIMATE,
+    MessageId.MOVE_ESTIMATE,
+    MessageId.TURN_ESTIMATE,
+    MessageId.CIRCULAR_MOVE_ESTIMATE,
+    MessageId.MOVE_REQUEST,
+    MessageId.START_REQUEST,
+    MessageId.TERMINATE_REQUEST,
+]
 
 
-class Message:
+class Message(ABC):
     """
     Represents a message with a unique identifier.
 
@@ -33,8 +46,35 @@ class Message:
     def __init__(self, uid: MessageId):
         self.uid: MessageId = uid
 
+    def __eq__(self, other):
+        if isinstance(other, Message):
+            return self.uid == other.uid
+        return False
 
-class TimedMessage(Message):
+    def __hash__(self):
+        return hash(self.uid)
+
+    def get_fields(self) -> dict[str, str]:
+        """
+        Return a string representation of the message fields.
+        """
+        return {}
+
+    @staticmethod
+    def get_string() -> str:
+        """
+        Returns a concise string representation of the message type.
+        """
+        return ""
+
+    @staticmethod
+    def get_string_fields() -> list[str]:
+        """
+        String representation of the message fields.
+        """
+        return []
+
+class TimedMessage(Message, ABC):
     """
     Represents a message with an associated timestamp.
 
@@ -63,6 +103,23 @@ class SonarReading(TimedMessage):
         self.constant_std = constant_std
         self.normal_std = normal_std
 
+    @staticmethod
+    def get_string() -> str:
+        return "snr"
+
+    def get_fields(self) -> dict[str, str]:
+        return {
+            "reading_m": str(self.reading_m),
+            "std": str(self.std),
+            "constant_std": str(self.constant_std),
+            "normal_std": str(self.normal_std),
+        }
+
+    @staticmethod
+    def get_string_fields() -> list[str]:
+        return ["reading_m", "std", "constant_std", "normal_std"]
+
+
 class NavigationEstimate(TimedMessage):
     """
     Encapsulates navigation estimates, including positional coordinates.
@@ -79,6 +136,22 @@ class NavigationEstimate(TimedMessage):
         self.y = y
         self.theta = theta
 
+    @staticmethod
+    def get_string() -> str:
+        return "nav_est"
+
+    def get_fields(self) -> dict[str, str]:
+        return {
+            "x": str(self.x),
+            "y": str(self.y),
+            "theta": str(self.theta),
+        }
+
+    @staticmethod
+    def get_string_fields() -> list[str]:
+        return ["x", "y", "theta"]
+
+
 class MoveRequest(TimedMessage):
     """
     Represents a request to perform a movement action.
@@ -91,12 +164,58 @@ class MoveRequest(TimedMessage):
         self.theta = theta
         self.distance = distance
 
+    @staticmethod
+    def get_string() -> str:
+        return "move_req"
+
+    def get_fields(self) -> dict[str, str]:
+        return {
+            "theta": str(self.theta),
+            "distance": str(self.distance),
+        }
+
+    @staticmethod
+    def get_string_fields() -> list[str]:
+        return ["theta", "distance"]
+
+
+class StartRequest(TimedMessage):
+    """
+    Represents a request to start the robot / simulation.
+    """
+    def __init__(self):
+        super().__init__(MessageId.START_REQUEST)
+
+    @staticmethod
+    def get_string() -> str:
+        return "start_req"
+
+    def get_fields(self) -> dict[str, str]:
+        return {}
+
+    @staticmethod
+    def get_string_fields() -> list[str]:
+        return []
+
+
 class TerminateRequest(TimedMessage):
     """
     Represents a specific type of message for termination requests.
     """
     def __init__(self):
         super().__init__(MessageId.TERMINATE_REQUEST)
+
+    @staticmethod
+    def get_string() -> str:
+        return "term_req"
+
+    def get_fields(self) -> dict[str, str]:
+        return {}
+
+    @staticmethod
+    def get_string_fields() -> list[str]:
+        return []
+
 
 class MoveEstimate(TimedMessage):
     """
@@ -116,6 +235,22 @@ class MoveEstimate(TimedMessage):
         self.distance_std = distance_std
         self.theta_std = theta_std
 
+    @staticmethod
+    def get_string() -> str:
+        return "move_est"
+
+    def get_fields(self) -> dict[str, str]:
+        return {
+            "distance": str(self.distance),
+            "distance_std": str(self.distance_std),
+            "theta_std": str(self.theta_std),
+        }
+
+    @staticmethod
+    def get_string_fields() -> list[str]:
+        return ["distance", "distance_std", "theta_std"]
+
+
 class TurnEstimate(TimedMessage):
     """
     Represents an estimate of a turn of the robot.
@@ -128,6 +263,21 @@ class TurnEstimate(TimedMessage):
         self.theta = theta
         self.theta_std = theta_std
 
+    @staticmethod
+    def get_string() -> str:
+        return "t_move_est"
+
+    def get_fields(self) -> dict[str, str]:
+        return {
+            "theta": str(self.theta),
+            "theta_std": str(self.theta_std),
+        }
+
+    @staticmethod
+    def get_string_fields() -> list[str]:
+        return ["theta", "theta_std"]
+
+
 class CircularMoveEstimate(TimedMessage):
     def __init__(self, radius: float, angle: float, std: tuple[float, float]):
         super().__init__(MessageId.CIRCULAR_MOVE_ESTIMATE)
@@ -135,17 +285,61 @@ class CircularMoveEstimate(TimedMessage):
         self.angle = angle
         self.std = std
 
-class VirtualSonarRequest(TimedMessage):
-    """
-    Represents a request for a virtual sonar reading from the geofence.
-    """
-    def __init__(self):
-        super().__init__(MessageId.VIRTUAL_SONAR_REQUEST)
+    @staticmethod
+    def get_string() -> str:
+        return "c_move_est"
 
-class VirtualSonarResponse(TimedMessage):
-    """
-    Represents a response from the geofence with a virtual sonar reading.
-    """
-    def __init__(self, reading_m: float):
-        super().__init__(MessageId.VIRTUAL_SONAR_RESPONSE)
-        self.reading_m = reading_m
+    def get_fields(self) -> dict[str, str]:
+        return {
+            "radius": str(self.radius),
+            "angle": str(self.angle),
+            "std_rad": str(self.std[0]),
+            "std_ang": str(self.std[1]),
+        }
+
+    @staticmethod
+    def get_string_fields() -> list[str]:
+        return ["radius", "angle", "std_rad", "std_ang"]
+
+
+def message_fields_from_id(message_id) -> list[str]:
+    match message_id:
+        case MessageId.SONAR_READING:
+            return SonarReading.get_string_fields()
+        case MessageId.NAVIGATION_ESTIMATE:
+            return NavigationEstimate.get_string_fields()
+        case MessageId.MOVE_ESTIMATE:
+            return MoveEstimate.get_string_fields()
+        case MessageId.TURN_ESTIMATE:
+            return TurnEstimate.get_string_fields()
+        case MessageId.CIRCULAR_MOVE_ESTIMATE:
+            return CircularMoveEstimate.get_string_fields()
+        case MessageId.MOVE_REQUEST:
+            return MoveRequest.get_string_fields()
+        case MessageId.START_REQUEST:
+            return StartRequest.get_string_fields()
+        case MessageId.TERMINATE_REQUEST:
+            return TerminateRequest.get_string_fields()
+        case _:
+            raise ValueError(f"[Messages]: Unable to get message fields for message with id {message_id}")
+
+def message_name_from_id(message_id) -> str:
+    match message_id:
+        case MessageId.SONAR_READING:
+            return SonarReading.get_string()
+        case MessageId.NAVIGATION_ESTIMATE:
+            return NavigationEstimate.get_string()
+        case MessageId.MOVE_ESTIMATE:
+            return MoveEstimate.get_string()
+        case MessageId.TURN_ESTIMATE:
+            return TurnEstimate.get_string()
+        case MessageId.CIRCULAR_MOVE_ESTIMATE:
+            return CircularMoveEstimate.get_string()
+        case MessageId.MOVE_REQUEST:
+            return MoveRequest.get_string()
+        case MessageId.START_REQUEST:
+            return StartRequest.get_string()
+        case MessageId.TERMINATE_REQUEST:
+            return TerminateRequest.get_string()
+        case _:
+            raise ValueError(f"[Messages]: Unable to get message name for message with id {message_id}")

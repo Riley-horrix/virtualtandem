@@ -65,6 +65,10 @@ class Configuration:
         type_config = _TypedConfiguration[list[int]](self.config)
         return type_config.get_conf(obj, config, default, fail, "list of ints")
 
+    def get_conf_list_str(self, obj: str, config: str, default: list[str] = [], fail: bool = True) -> list[str]:
+        type_config = _TypedConfiguration[list[str]](self.config)
+        return type_config.get_conf(obj, config, default, fail, "list of strings")
+
 
 global_conf = Configuration("configuration.toml")
 
@@ -94,3 +98,6 @@ class Configurable(ABC):
 
     def get_conf_list(self, config: str, default: list[int] = [], fail: bool = True) -> list[int]:
         return self.conf.get_conf_list(self.object_str, config, default = default, fail=fail)
+
+    def get_conf_list_str(self, config: str, default: list[str] = [], fail: bool = True) -> list[str]:
+        return self.conf.get_conf_list_str(self.object_str, config, default = default, fail=fail)
