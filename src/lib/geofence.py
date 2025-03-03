@@ -23,8 +23,8 @@ class Geofence(Configurable):
         self.max_y: float = 0.0
 
     def initialise(self, conf: Configuration = None):
-        if conf is not None:
-            self.set_conf(conf)
+        print("[Geofence]: Initialising")
+        Configurable.initialise(self, conf)
         x_points = self.conf.get_conf_list_f("Geofence", "points_x")
         y_points = self.conf.get_conf_list_f("Geofence", "points_y")
         self.points = list(zip(x_points, y_points))

@@ -20,7 +20,8 @@ class MessageId(Enum):
     MOVE_REQUEST: int =             20
 
     START_REQUEST: int =            30
-    TERMINATE_REQUEST: int =        31
+    INITIALISE_REQUEST: int =       31
+    TERMINATE_REQUEST: int =        32
 
 all_message_ids: list[MessageId] = [
     MessageId.SONAR_READING,
@@ -30,6 +31,7 @@ all_message_ids: list[MessageId] = [
     MessageId.CIRCULAR_MOVE_ESTIMATE,
     MessageId.MOVE_REQUEST,
     MessageId.START_REQUEST,
+    MessageId.INITIALISE_REQUEST,
     MessageId.TERMINATE_REQUEST,
 ]
 
@@ -301,45 +303,65 @@ class CircularMoveEstimate(TimedMessage):
     def get_string_fields() -> list[str]:
         return ["radius", "angle", "std_rad", "std_ang"]
 
+# TODO Make this take in a conf object
+class InitialiseRequest(TimedMessage):
+    def __init__(self):
+        super().__init__(MessageId.INITIALISE_REQUEST)
+
+    @staticmethod
+    def get_string() -> str:
+        return "init_req"
+
+    def get_fields(self) -> dict[str, str]:
+        return {}
+
+    @staticmethod
+    def get_string_fields() -> list[str]:
+        return []
+
 
 def message_fields_from_id(message_id) -> list[str]:
     match message_id:
-        case MessageId.SONAR_READING:
+        case MessageId.SONAR_READING.value:
             return SonarReading.get_string_fields()
-        case MessageId.NAVIGATION_ESTIMATE:
+        case MessageId.NAVIGATION_ESTIMATE.value:
             return NavigationEstimate.get_string_fields()
-        case MessageId.MOVE_ESTIMATE:
+        case MessageId.MOVE_ESTIMATE.value:
             return MoveEstimate.get_string_fields()
-        case MessageId.TURN_ESTIMATE:
+        case MessageId.TURN_ESTIMATE.value:
             return TurnEstimate.get_string_fields()
-        case MessageId.CIRCULAR_MOVE_ESTIMATE:
+        case MessageId.CIRCULAR_MOVE_ESTIMATE.value:
             return CircularMoveEstimate.get_string_fields()
-        case MessageId.MOVE_REQUEST:
+        case MessageId.MOVE_REQUEST.value:
             return MoveRequest.get_string_fields()
-        case MessageId.START_REQUEST:
+        case MessageId.START_REQUEST.value:
             return StartRequest.get_string_fields()
-        case MessageId.TERMINATE_REQUEST:
+        case MessageId.INITIALISE_REQUEST.value:
+            return InitialiseRequest.get_string_fields()
+        case MessageId.TERMINATE_REQUEST.value:
             return TerminateRequest.get_string_fields()
         case _:
             raise ValueError(f"[Messages]: Unable to get message fields for message with id {message_id}")
 
 def message_name_from_id(message_id) -> str:
     match message_id:
-        case MessageId.SONAR_READING:
+        case MessageId.SONAR_READING.value:
             return SonarReading.get_string()
-        case MessageId.NAVIGATION_ESTIMATE:
+        case MessageId.NAVIGATION_ESTIMATE.value:
             return NavigationEstimate.get_string()
-        case MessageId.MOVE_ESTIMATE:
+        case MessageId.MOVE_ESTIMATE.value:
             return MoveEstimate.get_string()
-        case MessageId.TURN_ESTIMATE:
+        case MessageId.TURN_ESTIMATE.value:
             return TurnEstimate.get_string()
-        case MessageId.CIRCULAR_MOVE_ESTIMATE:
+        case MessageId.CIRCULAR_MOVE_ESTIMATE.value:
             return CircularMoveEstimate.get_string()
-        case MessageId.MOVE_REQUEST:
+        case MessageId.MOVE_REQUEST.value:
             return MoveRequest.get_string()
-        case MessageId.START_REQUEST:
+        case MessageId.START_REQUEST.value:
             return StartRequest.get_string()
-        case MessageId.TERMINATE_REQUEST:
+        case MessageId.INITIALISE_REQUEST.value:
+            return InitialiseRequest.get_string()
+        case MessageId.TERMINATE_REQUEST.value:
             return TerminateRequest.get_string()
         case _:
             raise ValueError(f"[Messages]: Unable to get message name for message with id {message_id}")

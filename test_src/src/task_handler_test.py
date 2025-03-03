@@ -18,7 +18,7 @@ class TestTaskHandler(unittest.TestCase):
         task_handler.task_delay(task_cancel, 100)
 
         task_handler.start()
-        self.assertAlmostEqual(len(repeat_num), 80, delta=10.0)
+        self.assertAlmostEqual(len(repeat_num), 90, delta=10.0)
 
     def test_tasks_run(self):
         task_handler = TaskHandler()

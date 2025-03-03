@@ -2,7 +2,7 @@ from src.lib.configuration import Configurable, Configuration
 from src.lib.math_utils import distance, signed_angle_between
 
 from src.message import Consumer, Producer, MessageHub, MessageId
-from src.messages import Message, NavigationEstimate, TerminateRequest, MoveRequest, StartRequest
+from src.messages import Message, NavigationEstimate, TerminateRequest, MoveRequest, StartRequest, InitialiseRequest
 from src.service import Service
 from src.task_handler import TaskHandle, TaskHandler, Task
 
@@ -34,6 +34,7 @@ class Navigator(Consumer, Producer, Configurable, Service):
         self.terminate_wait: int = 0
 
     def initialise(self, conf: Configuration = None):
+        print("[Navigator]: Initialise")
         Configurable.initialise(self, conf)
 
         waypoints_x = self.get_conf_list_f("waypoints_x")
@@ -47,9 +48,9 @@ class Navigator(Consumer, Producer, Configurable, Service):
         self.interval_ms = self.get_conf_num("interval_ms")
         self.waypoint_threshold = self.get_conf_num_f("waypoint_threshold")
 
-        self.startup_wait = self.get_conf_num_f("startup_wait")
-        self.waypoint_wait = self.get_conf_num_f("waypoint_wait")
-        self.terminate_wait = self.get_conf_num_f("stop_wait")
+        self.startup_wait = self.get_conf_num("startup_wait_ms")
+        self.waypoint_wait = self.get_conf_num("waypoint_wait_ms")
+        self.terminate_wait = self.get_conf_num("terminate_wait_ms")
 
     def send(self, message: Message):
         if isinstance(message, NavigationEstimate):
@@ -58,11 +59,14 @@ class Navigator(Consumer, Producer, Configurable, Service):
             self.stop()
         if isinstance(message, StartRequest):
             self.task_handler.task_delay(Task(lambda _: self.start()), self.startup_wait)
+        if isinstance(message, InitialiseRequest):
+            self.initialise()
 
     def get_consumed(self) -> list[MessageId]:
         return [
             MessageId.NAVIGATION_ESTIMATE,
             MessageId.START_REQUEST,
+            MessageId.INITIALISE_REQUEST,
             MessageId.TERMINATE_REQUEST,
         ]
 
@@ -92,8 +96,9 @@ class Navigator(Consumer, Producer, Configurable, Service):
         self.deliver(MoveRequest(angle_to_waypoint, distance(current_waypoint, current_position)))
 
     def start(self) -> None:
+        print("[Navigator]: Started")
         self.stop()
-        self.emit_handle = self.task_handler.task_interval(Task(lambda _: self.emit_move_request), self.interval_ms)
+        self.emit_handle = self.task_handler.task_interval(Task(lambda _: self.emit_move_request()), self.interval_ms)
 
     def stop(self) -> None:
         if self.emit_handle is not None:

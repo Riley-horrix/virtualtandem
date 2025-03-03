@@ -99,6 +99,7 @@ class TaskHandler:
 
         :return: None
         """
+        print("[TaskHandler]: Started")
         while self.task_queue:
             # Get the next task to execute
             task = self.task_queue[0]
@@ -110,6 +111,9 @@ class TaskHandler:
 
             # If in the future then delay
             time = current_time_ms()
+
+            # print("[TaskHandler]: Starting task", [task.time for task in self.task_queue])
+
             if task.time > time:
                 sleep_ms(task.time - time)
 

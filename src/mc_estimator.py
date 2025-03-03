@@ -4,7 +4,7 @@ from statistics import NormalDist
 from enum import Enum
 
 from src.lib.geofence import Geofence
-from src.messages import NavigationEstimate, SonarReading, MessageId, MoveEstimate, TurnEstimate
+from src.messages import NavigationEstimate, SonarReading, MessageId, MoveEstimate, TurnEstimate, InitialiseRequest
 from src.message import Consumer, Producer, Message, MessageHub
 from src.lib.configuration import Configurable, ConfigurationException, Configuration
 
@@ -117,8 +117,6 @@ class MonteCarloPositionEstimator(Consumer, Producer, Configurable):
     :ivar num_particles: Number of particles used in the estimation.
     :ivar particles: List of particles used in the estimation.
     :ivar geofence: Geofence object to constrain particles within boundaries.
-
-    :ivar navigation_estimate: Navigation estimate message storing calculated position and orientation.
     """
     def __init__(self, hub: MessageHub):
         Consumer.__init__(self, hub)
@@ -135,11 +133,10 @@ class MonteCarloPositionEstimator(Consumer, Producer, Configurable):
         self.particles: list[NormalParticle] = []
 
         self.geofence: Geofence = Geofence()
-        self.navigation_estimate: NavigationEstimate = NavigationEstimate(self.start_x, self.start_y, self.start_theta)
 
     def initialise(self, conf: Configuration = None):
-        if conf is not None:
-            self.set_conf(conf)
+        print("[MCEstimator]: Initialise")
+        Configurable.initialise(self, conf)
 
         self.localisation_str = self.conf.get_conf_str("MCPositionEstimator", "localisation")
         self.localisation: LocalisationMethod = LocalisationMethod.from_str(self.localisation_str)
@@ -153,7 +150,7 @@ class MonteCarloPositionEstimator(Consumer, Producer, Configurable):
         self.num_particles = self.conf.get_conf_num("MCPositionEstimator", "num_particles")
 
         self.geofence.initialise(conf)
-        self.navigation_estimate: NavigationEstimate = NavigationEstimate(self.start_x, self.start_y, self.start_theta)
+        self.deliver(NavigationEstimate(self.start_x, self.start_y, self.start_theta))
         self.initialise_particles()
 
     def initialise_particles(self) -> None:
@@ -188,10 +185,7 @@ class MonteCarloPositionEstimator(Consumer, Producer, Configurable):
             self.normalise_weights()
 
         estimate: tuple[float, float, float] = self.estimate_position()
-        self.navigation_estimate.x = estimate[0]
-        self.navigation_estimate.y = estimate[1]
-        self.navigation_estimate.theta = estimate[2]
-        self.deliver(self.navigation_estimate)
+        self.deliver(NavigationEstimate(estimate[0], estimate[1], estimate[2]))
 
     def estimate_position(self) -> tuple[float, float, float]:
         estimate: list[float] = [0.0, 0.0, 0.0]
@@ -217,7 +211,7 @@ class MonteCarloPositionEstimator(Consumer, Producer, Configurable):
         constant_std: float = sonar_reading.constant_std
         normal_std: float = sonar_reading.normal_std
 
-        inv_normal = NormalDist(0, normal_std).inv_cdf
+        normal_pdf = NormalDist(0, normal_std).pdf
 
         # Update weights according to the probability of the sonar reading and
         # the normal angle to the wall
@@ -226,7 +220,7 @@ class MonteCarloPositionEstimator(Consumer, Producer, Configurable):
             if geo_result is not None:
                 distance, normal = geo_result
                 likelihood: float = math.exp(-(distance - reading) * (distance - reading) / (2 * std * std))
-                likelihood *= inv_normal(normal)
+                likelihood *= normal_pdf(normal)
                 likelihood += constant_std
                 particle.weight *= likelihood
 
@@ -261,23 +255,23 @@ class MonteCarloPositionEstimator(Consumer, Producer, Configurable):
 
     def emit_estimate(self):
         estimate: tuple[float, float, float] = self.estimate_position()
-        self.navigation_estimate.x = estimate[0]
-        self.navigation_estimate.y = estimate[1]
-        self.navigation_estimate.theta = estimate[2]
-        self.deliver(self.navigation_estimate)
-
+        self.deliver(NavigationEstimate(estimate[0], estimate[1], estimate[2]))
 
     def send(self, message: Message):
         if isinstance(message, SonarReading):
             self.handle_sonar_reading(message)
-        elif isinstance(message, MoveEstimate):
+        if isinstance(message, MoveEstimate):
             self.handle_move_estimate(message)
-        elif isinstance(message, TurnEstimate):
+        if isinstance(message, TurnEstimate):
             self.handle_turn_estimate(message)
+        if isinstance(message, InitialiseRequest):
+            self.initialise()
+            self.geofence.initialise()
 
     def get_consumed(self) -> list[MessageId]:
         return [
             MessageId.SONAR_READING,
             MessageId.MOVE_ESTIMATE,
             MessageId.TURN_ESTIMATE,
+            MessageId.INITIALISE_REQUEST,
         ]

@@ -79,7 +79,8 @@ class Configurable(ABC):
 
     @abstractmethod
     def initialise(self, conf: Configuration = None):
-        pass
+        if conf is not None:
+            self.set_conf(conf)
 
     def set_conf(self, conf: Configuration):
         self.conf = conf

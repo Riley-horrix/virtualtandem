@@ -4,12 +4,16 @@ import time
 from src.lib.configuration import Configurable, Configuration, ConfigurationException
 from src.message import Consumer, Producer, MessageHub
 from src.messages import MessageId, Message, NavigationEstimate, MoveRequest, TurnEstimate, MoveEstimate, \
-    CircularMoveEstimate, TerminateRequest, StartRequest
+    CircularMoveEstimate, TerminateRequest, StartRequest, InitialiseRequest
 from src.service import Service
 from src.task_handler import TaskHandler, Task, TaskHandle
 
-from src.drivers.brickpi3 import bp_global_context, BrickPi3
+import os
 
+if os.getenv("RASP_PI") is not None and os.getenv("RASP_PI") == "TRUE":
+    from src.drivers.brickpi3 import bp_global_context, BrickPi3
+else:
+    from src.drivers.fake_brickpi3 import bp_global_context, BrickPi3
 
 class MotorController(Service, Consumer, Producer, Configurable):
     def __init__(self, hub: MessageHub, task_handler: TaskHandler):
@@ -61,10 +65,11 @@ class MotorController(Service, Consumer, Producer, Configurable):
         self.this_time: float = 0.0
 
     def initialise(self, conf: Configuration = None):
+        print("[MotorController]: Initialising")
         Configurable.initialise(self, conf)
         self.stop()
 
-        self.emit_interval_ms = self.get_conf_num("emit_interval_ms")
+        self.emit_interval_ms = self.get_conf_num("estimate_interval_ms")
         self.command_interval_ms = self.get_conf_num("command_interval_ms")
 
         self.left_motor_port = self.port_str_to_port(self.get_conf_str("left_motor_port"))
@@ -87,7 +92,7 @@ class MotorController(Service, Consumer, Producer, Configurable):
         self.move_encoder_a = self.get_conf_num_f("move_encoder_a")
         self.move_encoder_b = self.get_conf_num_f("move_encoder_b")
 
-        self.encoder_cps = self.get_conf_num("encoder_cps")
+        self.encoder_cps = self.get_conf_num("encoder_cpr")
 
         self.wheel_radius = self.get_conf_num_f("wheel_radius")
         self.wheel_base = self.get_conf_num_f("wheel_base")
@@ -125,12 +130,15 @@ class MotorController(Service, Consumer, Producer, Configurable):
             self.stop()
         if isinstance(message, StartRequest):
             self.start()
+        if isinstance(message, InitialiseRequest):
+            self.initialise()
 
     def get_consumed(self) -> list[MessageId]:
         return [
             MessageId.NAVIGATION_ESTIMATE,
             MessageId.MOVE_REQUEST,
             MessageId.START_REQUEST,
+            MessageId.INITIALISE_REQUEST,
             MessageId.TERMINATE_REQUEST,
         ]
     
@@ -209,9 +217,10 @@ class MotorController(Service, Consumer, Producer, Configurable):
         self.bp.set_motor_position(self.right_motor_port, right_encoder + encoder_turns)
 
     def start(self):
+        print("[MotorController]: Started")
         self.stop()
-        self.emit_handle = self.task_handler.task_interval(Task(lambda _: self.emit_move_estimate), self.emit_interval_ms)
-        self.command_handle = self.task_handler.task_interval(Task(lambda _: self.emit_command), self.command_interval_ms)
+        self.emit_handle = self.task_handler.task_interval(Task(lambda _: self.emit_move_estimate()), self.emit_interval_ms)
+        self.command_handle = self.task_handler.task_interval(Task(lambda _: self.emit_command()), self.command_interval_ms)
 
     def stop(self):
         if self.emit_handle is not None:

@@ -1,6 +1,8 @@
 [Sonar]
 # Emittion interval
 interval_ms = 50
+# How different in metres do the readings need to be, to be valid
+reading_threshold = 0.01
 
 # Standard deviation of readings
 std = 0.01
@@ -12,7 +14,7 @@ constant_std = 0.1
 # Sonar sensor port ("port_n" for n = {1, 2, 3, 4})
 sonar_port = "port_1"
 # Sonar position on the robot (x-axis is inline with the robot's direction)
-position_x = 0
+position_x = 0.0
 position_y = 0.15
 
 
@@ -23,7 +25,7 @@ localisation = "continuous"
 # Starting position
 start_x = 0.0
 start_y = 0.0
-start_theta = 0.0
+start_hed = 0.0
 
 # Number of particles in the Monte Carlo Simulation
 num_particles = 100
@@ -73,8 +75,8 @@ move_encoder_b = 0.98
 encoder_cpr = 360
 
 # Motor ports
-left_motor  = "port_D"
-right_motor = "port_C"
+left_motor_port  = "port_D"
+right_motor_port = "port_C"
 
 # Motor configurations
 max_power = 70.0
@@ -105,5 +107,6 @@ message_ids = [
     13, # Circular move estimate
     20, # Move request
     30, # Start request
-    31, # Terminate request
+    31, # Initialise request
+    32, # Terminate request
 ]

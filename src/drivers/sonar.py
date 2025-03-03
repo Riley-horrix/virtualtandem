@@ -1,13 +1,17 @@
 from src.message import Producer, MessageHub, Consumer
 
-from src.messages import SonarReading, MessageId, Message, TerminateRequest, VirtualSonarRequest, VirtualSonarResponse, \
-    StartRequest
+from src.messages import SonarReading, MessageId, Message, TerminateRequest, StartRequest, InitialiseRequest
 
 from src.lib.configuration import Configurable, Configuration, ConfigurationException
 from src.service import Service
 from src.task_handler import TaskHandler, Task, TaskHandle
 
-from src.drivers.brickpi3 import bp_global_context, BrickPi3
+import os
+
+if os.getenv("RASP_PI") is not None and os.getenv("RASP_PI") == "TRUE":
+    from src.drivers.brickpi3 import bp_global_context, BrickPi3
+else:
+    from src.drivers.fake_brickpi3 import bp_global_context, BrickPi3
 
 class Sonar(Producer, Consumer, Configurable, Service):
     def __init__(self, hub: MessageHub, task_handler: TaskHandler, conf_object: str = "Sonar"):
@@ -25,8 +29,12 @@ class Sonar(Producer, Consumer, Configurable, Service):
         self.bp: BrickPi3 = bp_global_context
         self.sonar_port: int = 0
         self.position: tuple[float, float] = (0.0, 0.0)
+        self.reading_threshold: float = 0.0
+        self.last_reading: float = 0.0
 
     def initialise(self, conf: Configuration = None):
+        print("[Sonar]: Initialising")
+        Configurable.initialise(self, conf)
         self.interval_ms = self.get_conf_num("interval_ms")
 
         self.std = self.get_conf_num_f("std")
@@ -34,7 +42,9 @@ class Sonar(Producer, Consumer, Configurable, Service):
         self.normal_std = self.get_conf_num_f("normal_std")
 
         self.sonar_port = self.sonar_port_to_port(self.get_conf_str("sonar_port"))
-        self.bp.set_sensor_type(self.sonar_port, self.bp.SENSOR_TYPE.ULTRASONIC)
+        self.bp.set_sensor_type(self.sonar_port, self.bp.SENSOR_TYPE.NXT_ULTRASONIC)
+
+        self.reading_threshold = self.get_conf_num_f("reading_threshold")
 
         x_off = self.get_conf_num_f("position_x")
         y_off = self.get_conf_num_f("position_y")
@@ -52,24 +62,30 @@ class Sonar(Producer, Consumer, Configurable, Service):
         else:
             raise ConfigurationException(f"[Sonar]: Invalid sonar port string: {sonar_port}")
 
-    def read_and_emit_sonar(self, _: TaskHandle):
-        reading_m = 1.0
-        self.deliver(SonarReading(reading_m, self.std, self.constant_std, self.normal_std))
+    def read_and_emit_sonar(self):
+        reading_m = float(self.bp.get_sensor(self.sonar_port)) / 100.0
+        if abs(self.last_reading - reading_m) > self.reading_threshold:
+            self.last_reading = reading_m
+            self.deliver(SonarReading(reading_m, self.std, self.constant_std, self.normal_std))
 
     def send(self, message: Message) -> None:
         if isinstance(message, TerminateRequest):
             self.stop()
         if isinstance(message, StartRequest):
             self.start()
+        if isinstance(message, InitialiseRequest):
+            self.initialise()
 
     def get_consumed(self) -> list[MessageId]:
         return [
             MessageId.TERMINATE_REQUEST,
+            MessageId.INITIALISE_REQUEST,
             MessageId.START_REQUEST,
         ]
 
     def start(self):
-        self.emit_handle = self.task_handler.task_interval(Task(self.read_and_emit_sonar), 100)
+        print("[Sonar]: Started")
+        self.emit_handle = self.task_handler.task_interval(Task(lambda _: self.read_and_emit_sonar()), 100)
 
     def stop(self):
         if self.emit_handle is not None:
