@@ -74,7 +74,7 @@ class Sonar(Producer, Consumer, Configurable, Service):
         if isinstance(message, StartRequest):
             self.start()
         if isinstance(message, InitialiseRequest):
-            self.initialise()
+            self.initialise(message.conf)
 
     def get_consumed(self) -> list[MessageId]:
         return [

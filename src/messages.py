@@ -303,10 +303,11 @@ class CircularMoveEstimate(TimedMessage):
     def get_string_fields() -> list[str]:
         return ["radius", "angle", "std_rad", "std_ang"]
 
-# TODO Make this take in a conf object
+
 class InitialiseRequest(TimedMessage):
-    def __init__(self):
+    def __init__(self, conf: Configuration = None):
         super().__init__(MessageId.INITIALISE_REQUEST)
+        self.conf = conf
 
     @staticmethod
     def get_string() -> str:

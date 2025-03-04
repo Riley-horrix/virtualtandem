@@ -60,7 +60,7 @@ class Navigator(Consumer, Producer, Configurable, Service):
         if isinstance(message, StartRequest):
             self.task_handler.task_delay(Task(lambda _: self.start()), self.startup_wait)
         if isinstance(message, InitialiseRequest):
-            self.initialise()
+            self.initialise(message.conf)
 
     def get_consumed(self) -> list[MessageId]:
         return [

@@ -33,7 +33,7 @@ class CSVLogger(Consumer, Configurable, Service):
         if isinstance(message, TerminateRequest):
             self.stop()
         if isinstance(message, InitialiseRequest):
-            self.initialise()
+            self.initialise(message.conf)
         if self.started and message.uid.value in self.requested_ids:
             self.handle_message(message)
 

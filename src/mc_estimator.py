@@ -4,9 +4,11 @@ from statistics import NormalDist
 from enum import Enum
 
 from src.lib.geofence import Geofence
-from src.messages import NavigationEstimate, SonarReading, MessageId, MoveEstimate, TurnEstimate, InitialiseRequest
+from src.messages import NavigationEstimate, SonarReading, MessageId, MoveEstimate, TurnEstimate, InitialiseRequest, \
+    CircularMoveEstimate, StartRequest, TerminateRequest
 from src.message import Consumer, Producer, Message, MessageHub
 from src.lib.configuration import Configurable, ConfigurationException, Configuration
+from src.service import Service
 
 
 class Particle:
@@ -80,7 +82,28 @@ class NormalParticle(Particle):
         :param std: Standard deviation.
         :return:
         """
-        self.position[2] += theta + random.normalvariate(0, std)
+        self.position[2] += random.normalvariate(theta, std)
+
+    def rotate_std(self, origin: tuple[float, float], theta: float, theta_std: float) -> None:
+        """
+        Rotate the particle in 2d space around the given origin through angle theta with standard deviation theta_std.
+
+        :param origin: Origin of rotation.
+        :param theta: Angle to rotate.
+        :param theta_std: Standard deviation.
+        :return: None
+        """
+        angle = random.normalvariate(theta, theta_std)
+        clockwise = theta > 0.0
+
+        moved_x = self.position[0] - origin[0]
+        moved_y = self.position[1] - origin[1]
+        sin_t = math.sin(angle)
+        cos_t = math.cos(angle)
+
+        self.position[2] += angle
+        self.position[0] = origin[0] + moved_x * cos_t - moved_y * sin_t
+        self.position[1] = origin[1] + moved_x * sin_t + moved_y * cos_t
 
 
 class LocalisationMethod(Enum):
@@ -131,6 +154,8 @@ class MonteCarloPositionEstimator(Consumer, Producer, Configurable):
 
         self.num_particles: int = 0
         self.particles: list[NormalParticle] = []
+
+        self.last_estimate: tuple[float, float, float] = (0.0, 0.0, 0.0)
 
         self.geofence: Geofence = Geofence()
 
@@ -184,8 +209,7 @@ class MonteCarloPositionEstimator(Consumer, Producer, Configurable):
             # Update weights to sum to zero
             self.normalise_weights()
 
-        estimate: tuple[float, float, float] = self.estimate_position()
-        self.deliver(NavigationEstimate(estimate[0], estimate[1], estimate[2]))
+        self.emit_estimate()
 
     def estimate_position(self) -> tuple[float, float, float]:
         estimate: list[float] = [0.0, 0.0, 0.0]
@@ -193,6 +217,7 @@ class MonteCarloPositionEstimator(Consumer, Producer, Configurable):
             estimate[0] += particle.get_x() * particle.weight
             estimate[1] += particle.get_y() * particle.weight
             estimate[2] += particle.get_theta() * particle.weight
+        self.last_estimate = tuple(estimate)
         return estimate[0], estimate[1], estimate[2]
 
     def normalise_weights(self):
@@ -225,6 +250,26 @@ class MonteCarloPositionEstimator(Consumer, Producer, Configurable):
                 particle.weight *= likelihood
 
         self.normalise_weights()
+        self.emit_estimate()
+
+    def handle_circular_estimate(self, circular_estimate: CircularMoveEstimate):
+        radius = circular_estimate.radius
+        theta = circular_estimate.angle
+        radius_std, theta_std = circular_estimate.std
+
+        position = self.last_estimate
+        angle_to_origin = position[2] + (90.0 if theta < 0.0 else -90.0)
+
+        sin_t = math.sin(angle_to_origin)
+        cos_t = math.cos(angle_to_origin)
+        sin_r = sin_t * radius
+        cos_r = cos_t * radius
+        pos_sin_r = position[0] + sin_r
+        pos_cos_r = position[1] + cos_r
+
+        for particle in self.particles:
+            rotation_origin = (pos_sin_r + sin_t * random.normalvariate(sigma=radius_std), pos_cos_r + cos_t * random.normalvariate(sigma=radius_std))
+            particle.rotate_std(rotation_origin, theta, theta_std)
 
     def resample_particles(self):
         # Build cumulative list with indexes
@@ -264,8 +309,10 @@ class MonteCarloPositionEstimator(Consumer, Producer, Configurable):
             self.handle_move_estimate(message)
         if isinstance(message, TurnEstimate):
             self.handle_turn_estimate(message)
+        if isinstance(message, CircularMoveEstimate):
+            self.handle_circular_estimate(message)
         if isinstance(message, InitialiseRequest):
-            self.initialise()
+            self.initialise(message.conf)
             self.geofence.initialise()
 
     def get_consumed(self) -> list[MessageId]:
