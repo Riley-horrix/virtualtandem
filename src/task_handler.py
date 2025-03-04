@@ -1,5 +1,5 @@
 from src.lib.time_utils import current_time_ms, sleep_ms
-
+from collections.abc import Callable
 
 class TaskHandle:
     """
@@ -13,11 +13,7 @@ class TaskHandle:
         self.task_handler.remove_task(self)
 
 
-def task_function(_: TaskHandle) -> None:
-    return None
-
-type task_func_t = type(task_function)
-
+task_func_t = Callable[[TaskHandle], None]
 
 class Task:
     def __init__(self, func: task_func_t):
