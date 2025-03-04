@@ -75,8 +75,8 @@ move_encoder_b = 0.98
 encoder_cpr = 360
 
 # Motor ports
-left_motor_port  = "port_D"
-right_motor_port = "port_C"
+left_motor_port  = "port_A"
+right_motor_port = "port_B"
 
 # Motor configurations
 max_power = 70.0
